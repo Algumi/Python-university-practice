@@ -60,14 +60,19 @@ def task_2():
 
 def task_3():
     arr = list(input().split(","))
-    
+
+    final = []
     for s in arr:
         ans = True
         for i in s:
             if not (i.isalpha() or i.isdigit() or i == "_"):
                 ans = False
         if not ans:
-            print(s)
+            final.append(s)
+    final.sort()
+    max_length = len(max(final, key=len))
+    for login in final:
+        print(login.rjust(max_length, ' '))
 
 
 def task_4():
@@ -121,7 +126,7 @@ def task_4():
 # task_2()
 
 # з0йдберг,dead_z*ne,john,===MeGaKiLlErXxX===,WILL_TURNER,andy01,В@ня
-#task_3()
+task_3()
 
 # 7 1 10 100 # * @ - + + ~  -10016
 # 10 15 - 7 *  -35
