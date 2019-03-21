@@ -2,7 +2,7 @@ from datetime import date, timedelta
 
 
 def task_1():
-    d, m, y = map(int, input().split())
+    d, m, y = map(int, input().split("."))
     birth_date = date(y, m, d)
     age = (date.today() - birth_date) // timedelta(days=365.2425)
     print(age)
@@ -10,7 +10,7 @@ def task_1():
 
 
 def task_2():
-    d, m, y = map(int, input().split())
+    d, m, y = map(int, input().split("."))
     life_days = int(input())
     diff = (date.today() - date(y, m, d)).days
     if diff > life_days:
