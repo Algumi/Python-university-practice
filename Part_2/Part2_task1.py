@@ -32,13 +32,11 @@ def task_1():
 
 
 def change(a, b):
-    c = []
-    for i in a:
-        c.append(i)
-    for i in range(len(a)):
-        a[i] = b[i]
-    for i in range(len(b)):
-        b[i] = c[i]
+    c = a.copy()
+    del a[:]
+    a.extend(b)
+    del b[:]
+    b.extend(c)
 
 
 def task_3():
@@ -77,7 +75,7 @@ def task_4():
 
 
 def test_task2():
-    a = [1, 2, 3]
+    a = [1, 2, 3, 9, 11]
     b = [7, 9, 8]
     print("Before:", a, b)
     change(a, b)
@@ -85,9 +83,9 @@ def test_task2():
 
 
 # 0 0 5 5 0 1 1 0
-task_1()
+#task_1()
 
-# test_task2()
+test_task2()
 # task_3()
 # task_4()
 
