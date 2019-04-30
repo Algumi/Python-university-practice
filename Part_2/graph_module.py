@@ -38,7 +38,7 @@ class Graph:
     def min_path(self, s, t):
         queue, visited, path, ans = [s], set(), dict(), []
         while queue:
-            v = list.pop(queue)
+            v = list.pop(queue, 0)
             visited.add(v)
             if v != t:
                 new = set(self.adjacency_list[v]) - visited - path.keys()
@@ -175,6 +175,9 @@ class WeightedGraph(UndirectedGraph):
             self.adjacency_list[inp[0]] = vert_l
         self.generate_info()
 
+    # file: lines of adjacency_list (first element of line - vertex value, other - connected vertices)
+    # Format:
+    # <vertex> (<connected vertex 1> <weight of edge 1>) (<connected vertex 2> <weight of edge 2>) ... (and so on)
     def text_input(self, file):
         UndirectedGraph.text_input(self, file)
         self.add_weights()
@@ -205,6 +208,7 @@ class WeightedGraph(UndirectedGraph):
             return d[t], list(reversed(path + [s]))
         return float("inf"), []
 
+    # used Kruskal algorithm
     def min_spanning_tree(self):
         g = [[val, x[0], x[1]] for x, val in self.weights.items()]
         n, m = len(self.vertices), len(self.edges)
