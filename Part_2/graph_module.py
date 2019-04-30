@@ -1,342 +1,225 @@
-import copy
+from copy import deepcopy
+
 
 class Graph:
-    graph_list = {}
-    vertex_num = 0
+    adjacency_list = {}
+    edges = set()
+    vertices = set()
     oriented_graph = False
 
-    def __init__(self, constructor_type, arg_list):
-        self.graph_list = {}
+    def __init__(self, arg_list=None):
+        if arg_list:
+            self.adjacency_list = deepcopy(arg_list)
+            self.generate_info()
 
-        # creates fully connected graph (constructor_type = 1)
-        # arguments - [orientation, number of vertices, default value in vertex]
-        if constructor_type == 1:
-            self.vertex_num = arg_list[0]
-            vertex_type = arg_list[1]
-            for i in range(self.vertex_num):
-                self.graph_list.update({i: [[(i, 0) for i in range(self.vertex_num)],
-                                            vertex_type + i, 0]})
-                self.graph_list[i][0].remove((i, 0))
+    def adj_list_input(self, a_list):
+        self.adjacency_list = deepcopy(a_list)
+        self.generate_info()
 
-        # creates a graph, reading info from the file (constructor_type = 2)
-        # arguments - [file name]
-        elif constructor_type == 3:
-            input_data = open(arg_list[0], 'r')
+    # file: lines of adjacency_list (first element of line - vertex value, other - connected vertices)
+    # Format: <vertex> <connected vertex 1> <connected vertex 2> ... (and so for all vertices)
+    def text_input(self, file):
+        input_data = open(file, 'r')
+        self.adjacency_list = dict()
+        for line in input_data:
+            inp = line.split()
+            self.adjacency_list.update({inp[0]: inp[1:]})
+        self.generate_info()
 
-            # reads orientation and weight mode
-            self.oriented_graph = bool(int(input_data.readline()[13:-1]))
-            weight = bool(int(input_data.readline()[7:-1]))
+    def generate_info(self):
+        self.vertices = set(self.adjacency_list.keys())
+        self.get_edges()
 
-            # reads the vertices
-            vertex_list = input_data.readline()
-            vertex_list = vertex_list[:-1].split("__")
-            for vert in vertex_list:
-                self.add_vertex(vert)
+    def get_edges(self):
+        self.edges = set()
+        for v, lst in self.adjacency_list.items():
+            self.edges.update([(v, x) for x in lst])
 
-            # reads the edges
-            for line in input_data:
-                edge = line.split()
-                if not weight:
-                    edge.append(0)
-                self.add_edge(int(edge[0]), int(edge[1]), int(edge[2]))
-
-        # creates transposed graph
-        elif constructor_type == 5:
-            graph_info = arg_list[0].get_info()
-            self.__graph_list = copy.deepcopy(graph_info[0])
-            self.__oriented_graph = copy.deepcopy(graph_info[2])
-            # cleans the adj list
-            for vert in self.__graph_list.values():
-                vert[0] = []
-            # creates inverted edges
-            for vert in graph_info[0].items():
-                for item in vert[1][0]:
-                    self.__graph_list[item[0]][0].append((vert[0], 0))
-
-    def get_info(self):
-        return [self.graph_list, self.vertex_num, self.oriented_graph]
-
-    def print_list(self):
-        print()
-        print(len(self.graph_list))
-        for item in self.graph_list:
-            print("Vertex ", item, self.graph_list[item])
-
-    def add_vertex(self, value):
-        if not self.find_vertex_id(value):
-            # 0 - white, 1 - gray, 2 - black
-            color = 0
-            self.graph_list.update({self.vertex_num: [[], value, color]})
-            self.vertex_num += 1
-        else:
-            print("Vertex with this value already exist")
-            return False
-
-    def add_edge(self, vertex1, vertex2, weight=0):
-        self.graph_list[vertex1][0].append((vertex2, weight))
-        if not self.oriented_graph:
-            self.graph_list[vertex2][0].append((vertex1, weight))
-
-    def remove_edge(self, vertex1, vertex2):
-        was_find = False
-        for item in self.graph_list[vertex1][0]:
-            if item[0] == vertex2:
-                self.graph_list[vertex1][0].remove(item)
-                was_find = True
-        if not self.oriented_graph:
-            for item in self.graph_list[vertex2][0]:
-                if item[0] == vertex1:
-                    self.graph_list[vertex2][0].remove(item)
-                    was_find = True
-        if not was_find:
-            return False
-
-    def remove_vertex_id(self, vertex_num):
-        if vertex_num in self.graph_list:
-            del self.graph_list[vertex_num]
-            for vert in self.graph_list:
-                for item in self.graph_list[vert][0]:
-                    if item[0] == vertex_num:
-                        self.graph_list[vert][0].remove(item)
-        else:
-            print("Remove failed. There is no such vertex")
-            return False
-        return True
-
-    def find_vertex_id(self, value):
-        for vertex in self.graph_list.items():
-            if vertex[1][1] == value:
-                return vertex[0]
-        return False
-
-    def remove_vertex_value(self, value, first_try=True):
-        vert_del_id = self.find_vertex_id(value)
-
-        if not vert_del_id and first_try:
-            print("Remove failed. There is no such vertex")
-            return False
-        elif vert_del_id:
-            self.remove_vertex_id(vert_del_id)
-            self.remove_vertex_value(value, False)
-            return True
-
-    # Returns minimal path between vertices s and t
-    def min_distance(self, s, t):
-        queue = [s]
-        path = []
-        parent = dict()
-        vertex = s
-
-        while queue and vertex != t:
-            vertex = queue.pop(0)
-            if vertex not in path:
-                near = [x[0] for x in self.graph_list[vertex][0]]
-                if t in near:
-                    parent[t] = vertex
-                    path.append(t)
-                    queue = []
-                else:
-                    path.append(vertex)
-                    new = (set(near) - set(path) - set(parent.keys()))
-                    for v in new:
-                        parent[v] = vertex
-                    queue.extend(new)
-
-        if path[-1] == t:
-            ans = []
+    def min_path(self, s, t):
+        queue, visited, path, ans = [s], set(), dict(), []
+        while queue:
+            v = list.pop(queue)
+            visited.add(v)
+            if v != t:
+                new = set(self.adjacency_list[v]) - visited - path.keys()
+                path.update([(x, v) for x in new])
+                queue.extend(new)
+            else:
+                queue = []
+        if t in path.keys():
             while t != s:
                 ans.append(t)
-                t = parent[t]
-            ans.append(s)
-            return reversed(ans)
-        else:
-            return []
-
-    def get_adjacency_matrix(self):
-        matr = []
-        for vert in self.graph_list.items():
-            tmp_matr = [float("inf") for i in range(len(self.graph_list))]
-            tmp_matr[vert[0]] = 0
-            for edge in vert[1][0]:
-                tmp_matr[edge[0]] = edge[1]
-            matr.append(tmp_matr)
-        return matr
-
-    # makes the color of all vertices = white
-    def reset_color(self):
-        for vert in self.graph_list.items():
-            vert[1][2] = 0
-
-    # finds all the components(returns them in format {vert : comp} and makes graph_list[vert_num][3] = comp_num
-    def find_comp(self):
-        self.reset_color()
-        self.add_comp_field()
-        for vert in self.graph_list.items():
-            if vert[1][2] == 0:
-                self.dfs_for_comp(vert[0], vert[0])
-        comp = {}
-        for vert in self.graph_list.items():
-            comp.update({vert[0]: vert[1][3]})
-        return comp
-
-    # needed for finding components in graph
-    def dfs_for_comp(self, vert, start):
-        self.graph_list[vert][2] = 1
-        for item in self.graph_list[vert][0]:
-            if self.graph_list[item[0]][2] == 0:
-                self.dfs_for_comp(item[0], start)
-        self.graph_list[vert][2] = 2
-        self.graph_list[vert][3] = start
-
-    # returns all edges in graph (without repeats)
-    def get_edges(self):
-        edges = {}
-        for vert in self.graph_list.items():
-            for connect in vert[1][0]:
-                edges.update({(min(vert[0], connect[0]), max(vert[0], connect[0])) : connect[1]})
-        return edges
-
-    # adds field that will be used for info about component
-    def add_comp_field(self):
-        for vert in self.graph_list.items():
-            vert[1].append(vert[0])
-
-    def get_adjency_list(self):
-        ans = {}
-        for vert in self.graph_list.items():
-            ans_list = []
-            for item in vert[1][0]:
-                ans_list.append(self.graph_list[item[0]][1])
-            ans.update({vert[1][1]: ans_list})
-        return ans
-
-    def dfs_traversal(self):
-        # makes the color of all vertices = white
-        self.reset_color()
-        for vert in self.graph_list.items():
-            if vert[1][2] == 0:
-                self.dfs(vert[0])
-
-    def dfs(self, vert):
-        self.graph_list[vert][2] = 1
-        for item in self.graph_list[vert][0]:
-            if self.graph_list[item[0]][2] == 0:
-                self.dfs(item[0])
-        self.graph_list[vert][2] = 2
-
-    # checks that all vertices have same color
-    def check_color(self, color):
-        for vert in self.graph_list.values():
-            if vert[2] != color: return False
-        return True
+                t = path[t]
+            return list(reversed(ans + [s]))
+        return []
 
     def print_graph(self):
-        print("\nGraph Values:")
-        lst = self.get_adjency_list()
-        for v in lst.items():
-            print("vertex value %d :" % v[0], *v[1])
-        print("Graph id:")
-        for v in lst.items():
-            v_id = self.find_vertex_id(v[0])
-            print("vertex id %d :" % v_id, *[x[0] for x in self.graph_list[v_id][0]])
+        for v, lst in self.adjacency_list.items():
+            print(v, ':', *lst)
 
 
 class DirectedGraph(Graph):
-    def __init__(self, constructor_type, arg_list):
-        Graph.__init__(self, constructor_type, arg_list)
-        self.oriented_graph = True
+    def __init__(self, arg_list=None):
+        Graph.__init__(self, arg_list)
+
+    def check_weak_connection(self):
+        isolated = self.vertices - set([x[0] for x in self.edges]) - set([x[1] for x in self.edges])
+        return len(isolated) == 0
 
     def check_strong_connection(self):
-        self.reset_color()
-        self.dfs(self.vertex_num - 1)
-        for vert in self.graph_list.values():
-            if vert[2] == 0: return False
-        self.reset_color()
-        trans_graph = Graph(5, [self])
-        trans_graph.dfs(self.vertex_num - 1)
-        return trans_graph.check_color(2)
+        transposed_adj = dict([(x, []) for x in self.vertices])
+        for v, lst in self.adjacency_list.items():
+            for item in lst:
+                if v not in self.adjacency_list[item]:
+                    transposed_adj[item].append(v)
+        transposed_graph = DirectedGraph(transposed_adj)
+        return self.check_traversal() and transposed_graph.check_traversal()
+
+    def check_traversal(self):
+        visited = set()
+        
+        def dfs(s):
+            visited.add(s)
+            for v in self.adjacency_list[s]:
+                if v not in visited:
+                    dfs(v)
+        dfs(self.vertices.copy().pop())
+        return visited == self.vertices
+
+    def get_income_degree(self, v):
+        return len([x for x in self.edges if x[1] == v])
+
+    def get_outcome_degree(self, v):
+        return len([x for x in self.edges if x[0] == v])
 
 
 class UndirectedGraph(Graph):
-    def __init__(self, constructor_type, arg_list):
-        Graph.__init__(self, constructor_type, arg_list)
-        self.oriented_graph = False
+    bipartite_col = dict()
+    vert_colors = dict()
+    is_bipartite = -1
 
-    def check_connectivity(self):
-        return self.comp_number() == 1
+    def __init__(self, arg_list=None):
+        Graph.__init__(self, arg_list)
+        self.generate_info()
 
-    def comp_number(self):
-        return len(set(self.find_comp().values()))
+    def generate_info(self):
+        Graph.generate_info(self)
+        self.vert_colors = dict([(x, 0) for x in self.vertices])
+        self.bipartite_col = dict([(x, 0) for x in self.vertices])
+        self.is_bipartite = -1
+        self.calculate_comp_num()
 
     def check_completeness(self):
-        for v in self.graph_list.values():
-            if len(v[0]) != self.vertex_num - 1:
-                return False
-        return True
+        n = len(self.vertices)
+        return n * (n - 1) / 2 == len(self.edges) / 2
 
-    def vertex_degree(self, v_id):
-        return len(self.graph_list[v_id][0])
+    def vertex_degree(self, v):
+        return len(self.adjacency_list[v])
+
+    def calculate_comp_num(self):
+        for v in self.vertices:
+            if self.vert_colors[v] == 0:
+                self.dfs_special(v, len(set(self.vert_colors.values())), -1)
+        if self.is_bipartite == -1:
+            self.is_bipartite = True
+
+    def get_comp_num(self):
+        return len(set(self.vert_colors.values()))
+
+    def dfs_special(self, s, col, bip_col):
+        self.vert_colors[s] = col
+        if self.bipartite_col[s] == 0:
+            self.bipartite_col[s] = bip_col
+        for v in self.adjacency_list[s]:
+            if self.bipartite_col[v] == bip_col:
+                self.is_bipartite = False
+            if self.vert_colors[v] == 0:
+                self.dfs_special(v, col, bip_col * -1)
+
+    def check_bipartite(self):
+        return self.is_bipartite
+
+    def check_connectivity(self):
+        return self.get_comp_num() == 1
 
     def addition_graph(self):
-        ans = UndirectedGraph(0)
+        def neg(lst): return list(self.vertices - set(lst))
+        return UndirectedGraph(dict([(x, neg(lst)) for x, lst in self.adjacency_list.items()]))
 
 
 class WeightedGraph(UndirectedGraph):
+    weights = dict()
+    min_paths = dict()
+
+    def __init__(self, arg_list=None):
+        UndirectedGraph.__init__(self, arg_list)
+
+    def add_weights(self, w=None):
+        if w:
+            self.weights = deepcopy(w)
+        else:
+            for e in self.edges:
+                self.weights[e] = 0
+
+    def weighted_text_input(self, file):
+        input_data = open(file, 'r')
+        self.adjacency_list, self.weights = dict(), dict()
+        for line in input_data:
+            if line[-1] == '\n':
+                line = line[:-1]
+            inp = line.split(" ")
+            vert_l = [x[1:] for x in inp[1::2]]
+            w = [x[:-1] for x in inp[2::2]]
+            for i, v in enumerate(vert_l):
+                self.weights[(inp[0], v)] = int(w[i])
+            self.adjacency_list[inp[0]] = vert_l
+        self.generate_info()
+
+    def text_input(self, file):
+        UndirectedGraph.text_input(self, file)
+        self.add_weights()
+
+    def print_weighted_graph(self):
+        for v, lst in self.adjacency_list.items():
+            local_w = [str(self.weights[(v, x)]) for x in lst]
+            print(v, ":", *["(" + x + " " + local_w[i] + ")" for i, x in enumerate(lst)])
+
+    def min_path_weighted(self, s, t):
+        e = [[x[0], x[1], val] for x, val in self.weights.items()]
+        n, m = len(self.vertices), len(e)
+        d, p = dict([(x, float('inf')) for x in self.vertices]), dict()
+        d[s] = 0
+        for i in range(n):
+            for j in range(m):
+                if d[e[j][1]] > d[e[j][0]] + e[j][2]:
+                    d[e[j][1]] = int(d[e[j][0]]) + e[j][2]
+                    p[e[j][1]] = e[j][0]
+                if d[e[j][0]] > d[e[j][1]] + e[j][2]:
+                    d[e[j][0]] = int(d[e[j][1]]) + e[j][2]
+                    p[e[j][0]] = e[j][1]
+        path, v = [], t
+        if v in p.keys():
+            while v != s:
+                path.append(v)
+                v = p[v]
+            return d[t], list(reversed(path + [s]))
+        return float("inf"), []
+
     def min_spanning_tree(self):
-        # creates a new graph - copy
-        new_graph = Graph(0, [])
-        components = {}
-        min_edge = {}
-        vertex_num = 0
-        old_edges = self.get_edges()
-        added_edges = []
-        # preparations for creating tree
-        # new_graph = { vert_num : [[list], value, color, comp] }
-        for vert in self.graph_list.items():
-            vertex_num += 1
-            new_graph.add_vertex(vert[1][1])
-            components.update({vert[0]: vert[0]})
-            # min edges - {comp_id : [edge, wight]}
-            min_edge.update({vert[0]: [(0, 0), 0]})
-        new_graph.add_comp_field()
-
-        # main cycle of work
-        while len(added_edges) < vertex_num - 1:
-            for k in components.keys():
-                min_edge[k][1] = float("inf")
-            components = new_graph.find_comp()
-            # finds edges with min weight for every component
-            for edge in old_edges.keys():
-                if components[edge[0]] != components[edge[1]]:
-                    if (min_edge[components[edge[0]]][1]) > old_edges[edge]:
-                        min_edge[components[edge[0]]][0] = edge
-                        min_edge[components[edge[0]]][1] = old_edges[edge]
-                    if (min_edge[components[edge[1]]][1]) > old_edges[edge]:
-                        min_edge[components[edge[1]]][0] = edge
-                        min_edge[components[edge[1]]][1] = old_edges[edge]
-            # adds min edges in graph
-            for k in components.keys():
-                new_elem = (min_edge[k][0][0], min_edge[k][0][1])
-                if added_edges.count(new_elem) == 0:
-                    new_graph.add_edge(new_elem[0], new_elem[1], old_edges[new_elem])
-                    added_edges.append(new_elem)
-        return new_graph
-
-    def dijkstra(self, s):
-        d = self.get_adjacency_matrix()
-        n = len(d[0])
-        valid = [True] * n
-        weight = [float('inf')] * n
-        weight[s] = 0
-        for k in range(n):
-            min_weight = float('inf')
-            id_min_weight = -1
-            for i in range(n):
-                if valid[i] and weight[i] < min_weight:
-                    min_weight = weight[i]
-                    id_min_weight = i
-            for i in range(n):
-                if weight[id_min_weight] + d[id_min_weight][i] < weight[i]:
-                    weight[i] = weight[id_min_weight] + d[id_min_weight][i]
-            valid[id_min_weight] = False
-        return weight
+        g = [[val, x[0], x[1]] for x, val in self.weights.items()]
+        n, m = len(self.vertices), len(self.edges)
+        g.sort()
+        tree = dict([(str(x), i) for i, x in enumerate(self.vertices)])
+        ans = dict((x, []) for x in self.vertices)
+        for i in range(m):
+            a, b = g[i][1], g[i][2]
+            if tree[a] != tree[b]:
+                ans[a].append(b)
+                ans[b].append(a)
+                old_tree, new_tree = tree[b], tree[a]
+                for j in range(n):
+                    if tree[str(j)] == old_tree:
+                        tree[str(j)] = new_tree
+        result = WeightedGraph(ans)
+        result.add_weights(self.weights)
+        return result
