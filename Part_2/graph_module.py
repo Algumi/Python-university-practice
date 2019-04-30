@@ -148,5 +148,78 @@ class UndirectedGraph(Graph):
 
 
 class WeightedGraph(UndirectedGraph):
-    def __init__(self, arg_list):
+    weights = dict()
+    min_paths = dict()
+
+    def __init__(self, arg_list=None):
         UndirectedGraph.__init__(self, arg_list)
+
+    def add_weights(self, w=None):
+        if w:
+            self.weights = deepcopy(w)
+        else:
+            for e in self.edges:
+                self.weights[e] = 0
+
+    def weighted_text_input(self, file):
+        input_data = open(file, 'r')
+        self.adjacency_list, self.weights = dict(), dict()
+        for line in input_data:
+            if line[-1] == '\n':
+                line = line[:-1]
+            inp = line.split(" ")
+            vert_l = [x[1:] for x in inp[1::2]]
+            w = [x[:-1] for x in inp[2::2]]
+            for i, v in enumerate(vert_l):
+                self.weights[(inp[0], v)] = int(w[i])
+            self.adjacency_list[inp[0]] = vert_l
+        self.generate_info()
+
+    def text_input(self, file):
+        UndirectedGraph.text_input(self, file)
+        self.add_weights()
+
+    def print_weighted_graph(self):
+        for v, lst in self.adjacency_list.items():
+            local_w = [str(self.weights[(v, x)]) for x in lst]
+            print(v, ":", *["(" + x + " " + local_w[i] + ")" for i, x in enumerate(lst)])
+
+    def min_path_weighted(self, s, t):
+        e = [[x[0], x[1], val] for x, val in self.weights.items()]
+        n, m = len(self.vertices), len(e)
+        d, p = dict([(x, float('inf')) for x in self.vertices]), dict()
+        d[s] = 0
+        for i in range(n):
+            for j in range(m):
+                if d[e[j][1]] > d[e[j][0]] + e[j][2]:
+                    d[e[j][1]] = int(d[e[j][0]]) + e[j][2]
+                    p[e[j][1]] = e[j][0]
+                if d[e[j][0]] > d[e[j][1]] + e[j][2]:
+                    d[e[j][0]] = int(d[e[j][1]]) + e[j][2]
+                    p[e[j][0]] = e[j][1]
+        path, v = [], t
+        if v in p.keys():
+            while v != s:
+                path.append(v)
+                v = p[v]
+            return d[t], list(reversed(path + [s]))
+        return float("inf"), []
+
+    def min_spanning_tree(self):
+        g = [[val, x[0], x[1]] for x, val in self.weights.items()]
+        n, m = len(self.vertices), len(self.edges)
+        g.sort()
+        tree = dict([(str(x), i) for i, x in enumerate(self.vertices)])
+        ans = dict((x, []) for x in self.vertices)
+        for i in range(m):
+            a, b = g[i][1], g[i][2]
+            if tree[a] != tree[b]:
+                ans[a].append(b)
+                ans[b].append(a)
+                old_tree, new_tree = tree[b], tree[a]
+                for j in range(n):
+                    if tree[str(j)] == old_tree:
+                        tree[str(j)] = new_tree
+        result = WeightedGraph(ans)
+        result.add_weights(self.weights)
+        return result

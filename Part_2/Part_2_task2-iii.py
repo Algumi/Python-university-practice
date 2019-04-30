@@ -56,5 +56,14 @@ def main():
     print("Проверка на сильную связность:")
     print(test2.check_strong_connection())
 
+    test3 = gr.WeightedGraph()
+    test3.weighted_text_input('../test_data/test_graph_weighted.txt')
+    print(test3.weights)
+    print(test3.adjacency_list)
+    test3.print_weighted_graph()
+    print(test3.min_path('0', '3'))
+    print(*test3.min_path_weighted('0', '3'))
+    test3.min_spanning_tree().print_weighted_graph()
+
 
 main()
