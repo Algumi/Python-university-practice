@@ -66,7 +66,7 @@ class Polinom:
         res = ""
         for i in range(len(self.__coef) - 1, 0, -1):
             if self.__coef[i] != 0:
-                res += str(self.__coef[i]) + "x^" + str(i) + sign(self.__coef[i - 1])
+                res += str(abs(self.__coef[i])) + "x^" + str(i) + sign(self.__coef[i - 1])
         res += str(self.__coef[0])
         return res
 
@@ -83,7 +83,7 @@ class Polinom:
             return res
 
     def get_degree(self):
-        return len(self.__coef)
+        return len(self.__coef) - 1
 
     def get_coefficients(self):
         return self.__coef
@@ -110,7 +110,7 @@ class Polinom:
 
 
 def test():
-    p = Polinom([1, 0, 2, 4])
+    p = Polinom([1, 0, -2, 4])
     print(p)
     print(p.value(2))
     print(p.get_degree())

@@ -1,0 +1,2 @@
+﻿Почему tkinter такое дерьмо? || SAS
+Шел python по python? || python
