@@ -7,7 +7,7 @@ class Application:
     refresh_btn = Button()
     next_btn = Button()
     question_lbl = Label()
-    answer_input = Entry()
+    answer_input = []
 
     questions = []
     current_question = 0
@@ -20,13 +20,8 @@ class Application:
         self.main_page()
 
     def main_page(self):
-        self.refresh_btn = Button(self.window, text='restart', width=10, height=1, command=self.refresh_click)
-        self.refresh_btn.place(x=5, y=5)
-        self.next_btn = Button(self.window, text='next', width=10, height=1, command=self.next_question)
-        self.next_btn.place(x=250, y=250)
-
-        self.question_lbl = Label(self.window)
-        self.question_lbl.place(x=100, y=100)
+        self.question_lbl = Label(self.window, width=100, height=10)
+        self.question_lbl.pack(side=TOP)
         self.next_question(True)
         print(self.questions)
 
@@ -34,18 +29,22 @@ class Application:
 
     def locate_question_type1(self, q_data):
         print("\ni m working")
-        self.question_lbl.place(x=100, y=100)
+        self.question_lbl.pack(side=TOP)
         self.question_lbl.configure(text=q_data[2])
-        self.answer_input = Entry(self.window)
-        self.answer_input.place(x=200, y=120)
+        self.answer_input = [Entry(self.window, width=50)]
+        self.answer_input[0].pack(side=TOP)
 
     def locate_question_type2(self, q_data):
-        self.question_lbl.place(x=100, y=100)
+        self.question_lbl.pack(side=TOP)
         self.question_lbl.configure(text=q_data[2])
-        self.window.update()
+        radio_var = IntVar()
+        for i, ans in enumerate(q_data[3]):
+            radio_btn = Radiobutton(self.window, text=ans, variable=radio_var, value=i)
+            radio_btn.pack(side=TOP)
+            self.answer_input.append(radio_btn)
 
     def locate_question_type3(self, q_data):
-        self.question_lbl.place(x=100, y=100)
+        self.question_lbl.pack(side=TOP)
         self.question_lbl.configure(text=q_data[2])
         self.window.update()
 
@@ -55,14 +54,15 @@ class Application:
             q_id = self.current_question
             cur_q = self.questions[q_id]
             if cur_q[0] == 1:
-                if self.answer_input == cur_q[3]:
+                # print(cur_q[3] + "---" + str(self.answer_input[0].text) + "---")
+                if self.answer_input[0] == cur_q[3]:
                     self.questions[q_id][1] = 1
                 else:
                     self.questions[q_id][1] = 2
             self.current_question += 1
         if self.current_question < len(self.questions):
-            self.answer_input.place_forget()
-            self.question_lbl.place_forget()
+            self.destroy_located()
+            self.locate_buttons()
             next_q = self.questions[self.current_question]
             if next_q[0] == 1:
                 self.locate_question_type1(next_q)
@@ -71,9 +71,23 @@ class Application:
             if next_q[0] == 3:
                 self.locate_question_type3(next_q)
 
+    def locate_buttons(self):
+        self.refresh_btn = Button(self.window, text='restart', width=10, height=1, command=self.refresh_click)
+        self.refresh_btn.pack(side=BOTTOM, pady=10)
+        self.next_btn = Button(self.window, text='next', width=10, height=1, command=self.next_question)
+        self.next_btn.pack(side=BOTTOM, pady=10)
+
+    def destroy_located(self):
+        if len(self.answer_input) > 0:
+            for w in self.answer_input:
+                w.destroy()
+            self.answer_input = []
+            self.question_lbl.pack_forget()
+            self.next_btn.destroy()
+            self.refresh_btn.destroy()
+
     def refresh_click(self):
-        self.answer_input.place_forget()
-        self.question_lbl.place_forget()
+        self.destroy_located()
         self.start_app()
 
     def generate_questions(self):
